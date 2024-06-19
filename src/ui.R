@@ -8,8 +8,8 @@ library(DT)
 library(purrr)
 
 tooltip_text <- "Abundance is Catch Per Unit Effort (CPUE).
-It represents the number or weight of fish caught per unit 
-of fishing effort, such as per net.
+It represents the number of fish caught per unit of fishing 
+effort, such as per net.
 \n
 Size is L90, a metric used to describe the size distribution 
 of fish populations. It refers to the length at which 90% of 
