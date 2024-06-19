@@ -76,16 +76,17 @@ merge results and create .csv
  Results_20232002<- CPUE_results %>%
   left_join(L90, by = c("Year", "Location", "Species"))
 
-#create a new column that has all the years with data available for each location and species combination
+#create a new column with the number of avaliable years, and what years
 Results_20232002_years <- Results_20232002 %>%
   group_by(Location, Species) %>%
-  reframe(Years = paste(unique(Year), collapse = ", "))
+  summarise(
+    nYears = n_distinct(Year),
+    Years = paste(unique(Year), collapse = ", "))
 
 Results_20232002 <- Results_20232002 %>%
-  left_join(Results_20232002_years %>% select(Location, Species, Years), by = c("Location", "Species"))
+  left_join(Results_20232002_years %>% select(Location, Species, nYears, Years), by = c("Location", "Species"))
 
-write.csv(Results_20232002, "Results_20232002.csv", row.names = FALSE)
+#write.csv(Results_20232002, "Results_20232002.csv", row.names = FALSE)
 ```
-
 
 
