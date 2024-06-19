@@ -4,68 +4,71 @@ server <- function(input, output, session) {
   # Read data file
   data <- read.csv("../Results_20232002.csv")
   fish_puns <- readLines("../data/fish_puns.txt")
+  source("functions.R")
   
   ## Map Tab ##
   # Update species choices
   species <- data$Species %>% unique() %>% sort()
   updateSelectInput(session, "species", choices = species, selected = "Perch")
   
-  max_year <- max(data$Year)
-  min_year <- min(data$Year)
-  middle_year <- round((max_year + min_year) / 2, 0)
+  # Update year choices
   updateSliderInput(session, "year",
-                    min = min_year - 1,
-                    max = max_year,
-                    value = middle_year)
+                    min = min(data$Year) - 1,
+                    max = max(data$Year),
+                    value = round((max(data$Year) + min(data$Year)) / 2, 0))
   
   # Reactive value to store the previous indicator
   previous_indicator <- reactiveVal(NULL)
   
-  
-  # Update dataframe based on choices
+  # Update dataframe based on choice of species and year
   reactive_data <- reactive({
     req(input$species, input$year)
     
+    # Filter data based on species and year inputs
     df <- data[which(data$Species == input$species & data$Year == input$year), ]
     
+    # If no data matches the filter criteria, show an alert and return NULL
     if (is.null(df) || nrow(df) == 0) {
-      shinyalert(title = "No Data",
-                 text = paste("Something is fishy here. No data for", input$species, "in", input$year),
-                 type = "error")
-      
+      shinyalert(
+        title = "No Data",
+        text = paste("Something is fishy here. No data for", input$species, "in", input$year),
+        type = "error"
+      )
       return(NULL)
     }
     
     return(df)
   })
   
+  # Calculate the value ranges
   range_values <- reactive({
     df <- reactive_data()
     
-    if (input$indicator == "Abundance [CPUE]") {
-      df_col <- "CPUE"
-    } else if (input$indicator == "Size [L90]") {
-      df_col <- "L90_cm"
-    }
+    # Determine which column to use based on the selected indicator
+    col <- case_when(
+      input$indicator == "Abundance [CPUE]" ~ "CPUE",
+      input$indicator == "Size [L90]" ~ "L90_cm"
+    )
     
     # Remove rows where the selected column is NA
-    df <- df[!is.na(df[[df_col]]), ]
+    df <- df[!is.na(df[[col]]), ]
     
+    # If no data remains after filtering, return NULL
     if (is.null(df) || nrow(df) == 0) {
       return(NULL)
     }
     
-    # Compute min, max, and range
-    minimum <- min(df[[df_col]], na.rm = TRUE)
-    maximum <- max(df[[df_col]], na.rm = TRUE)
+    # Compute min, max, and range of the selected column
+    minimum <- min(df[[col]], na.rm = TRUE)
+    maximum <- max(df[[col]], na.rm = TRUE)
     range <- maximum - minimum
     
-    # Check for Inf or NaN values
+    # Check for Inf or NaN values in the computed values
     if (is.infinite(minimum) || is.infinite(maximum) || is.nan(minimum) || is.nan(maximum)) {
       return(NULL)  # Return NULL if any value is Inf or NaN
     }
     
-    # Compute quartile values
+    # Compute quartile values rounded to two decimal places
     val_00 <- round(minimum, 2)
     val_25 <- round(0.25 * range + minimum, 2)
     val_50 <- round(0.50 * range + minimum, 2)
@@ -76,19 +79,23 @@ server <- function(input, output, session) {
     return(values)
   })
   
+  # Data for creating markers on the map
   reactive_marker_data <- reactive({
     df <- reactive_data()
     indicator <- input$indicator
     
+    # If no data remains after filtering, return NULL
     if (is.null(df) || nrow(df) == 0) {
       return(NULL)
     }
     
+    # Handle different indicators to create display data for markers
     if (indicator == "Abundance [CPUE]"){
       max_CPUE <- max(df$CPUE)
       min_CPUE <- min(df$CPUE)
       range_CPUE <- max_CPUE - min_CPUE
       
+      # Create size categories based on CPUE values
       display_df_sizes <- df %>%
         mutate(size_category = case_when(
           CPUE > (0.75 * range_CPUE + min_CPUE) ~ 20,
@@ -97,26 +104,38 @@ server <- function(input, output, session) {
           TRUE ~ 5
         ))
     } else if (indicator == "Size [L90]"){
+      # Display alert if switching from CPUE to L90
       if (previous_indicator() == "Abundance [CPUE]") {
-        shinyalert(title = "Removing Data Points",
-                   text = paste("Your data is fishy! To use the size indicator, every location with less than 50", input$species, "caught have been removed"),
-                   type = "warning")
+        shinyalert(
+          title = "Removing Data Points",
+          text = paste("Your data is fishy! To use the size indicator, every location with less than 50", input$species, "caught have been removed"),
+          type = "warning"
+        )
       }
       
+      # Update previous_indicator with the current indicator
+      previous_indicator(input$indicator)
+      
+      # Filter data for L90 column and handle missing data
       display_df <- df %>%
         subset(!is.na(L90_cm))
       
+      # If no valid data remains, show error alert and return NULL
       if (is.null(display_df) || nrow(display_df) == 0) {
-        shinyalert(title = "No Data",
-                   text = paste0("Someone stole all of your fish! Every location has caught less than 50 ", input$species, ", so everything has been removed"),
-                   type = "error")
+        shinyalert(
+          title = "No Data",
+          text = paste0("Someone stole all of your fish! Every location has caught less than 50 ", input$species, ", so everything has been removed"),
+          type = "error"
+        )
         return(NULL)
       }
       
+      # Compute min, max, and range for L90 values
       max_L90 <- max(display_df$L90_cm)
       min_L90 <- min(display_df$L90_cm)
       range_L90 <- max_L90 - min_L90
       
+      # Create size categories based on L90 values
       display_df_sizes <- display_df %>%
         mutate(size_category = case_when(
           L90_cm > (0.75 * range_L90 + min_L90) ~ 20,
@@ -126,9 +145,7 @@ server <- function(input, output, session) {
         ))
     }
     
-    # Update previous_indicator with the current indicator
-    previous_indicator(input$indicator)
-    
+    # Return the display dataframe with size categories
     return(display_df_sizes)
   })
   
@@ -184,6 +201,8 @@ server <- function(input, output, session) {
       return(NULL)
     }
     
+    df <- df %>% mutate(Years_count = count_years(Years))
+    
     if (marker == "Circles") {
       leafletProxy("swedenMap", data = df) %>%
         clearMarkers() %>%
@@ -194,7 +213,7 @@ server <- function(input, output, session) {
           radius = ~size_category,               # Radius size
           stroke = FALSE, fillOpacity = 0.6,     # Border and fill opacity
           popup = ~paste0("<b>", Location, "</b><br>Number: ", count, "</b><br>Abundance: ", round(CPUE, 2), 
-                          "</b><br>Size: ", L90_cm, "</b><br>Years of data: ", Years)
+                          "</b><br>Size: ", L90_cm, "</b><br>Years of data: ", Years_count)
         )
     } else if (marker == "Fish") {
       fish_multiplier = 3
@@ -214,7 +233,7 @@ server <- function(input, output, session) {
           ),
           label = ~Location,                     # Label each marker
           popup = ~paste0("<b>", Location, "</b><br>Number: ", count, "</b><br>Abundance: ", round(CPUE, 2), 
-                          "</b><br>Size: ", L90_cm, "</b><br>Years of data: ", Years)
+                          "</b><br>Size: ", L90_cm, "</b><br>Years of data: ", Years_count)
         )
     }
   })
@@ -283,11 +302,11 @@ server <- function(input, output, session) {
           plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
           axis.title.x = element_text(size = 14, face = "bold"),
           axis.title.y = element_text(size = 14, face = "bold"),
-          axis.text.x = element_text(size = 12),
-          axis.text.y = element_text(size = 12),
+          axis.text.x = element_text(size = 10, angle = 90, hjust = 1),
+          axis.text.y = element_text(size = 10),
           panel.grid.major = element_line(color = "gray", linewidth = 0.5),
           panel.grid.minor = element_blank(),
-          panel.background = element_rect(fill = "white")
+          panel.background = element_rect(fill = "white"),
         ) +
         scale_x_continuous(breaks = df$Year)
     }
@@ -323,11 +342,15 @@ server <- function(input, output, session) {
   
   ## Data Explorer Tab ##
   # Cleaning up data
+  data_test <<- data
+  
+  # Process the data with the pipe
   table_data <- data %>%
-    select(-Ntot) %>%                    
-    mutate(across(c(Longitude, Latitude, CPUE), \(x) round(x, 2))) %>% 
+    select(-Ntot) %>%
+    mutate(across(c(Longitude, Latitude, CPUE), \(x) round(x, 2))) %>%
     rename(Count = count, 'Number of Nets' = Effort_Nnets, 
-           L90 = L90_cm, 'Years of available data' = Years)
+           L90 = L90_cm, 'Years of available data' = Years) %>%
+    mutate('Years of available data' = map_chr(`Years of available data`, truncate_years))
   
   # Render table in tab
   output$data_table <- renderDT({

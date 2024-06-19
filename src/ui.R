@@ -4,8 +4,8 @@ library(ggplot2)
 library(dplyr)
 library(shinyalert)
 library(tidyverse)
-library(DT)  # Load DT package for DataTables
-
+library(DT)
+library(purrr)
 
 tooltip_text <- "Abundance is Catch Per Unit Effort (CPUE).
 It represents the number or weight of fish caught per unit 
