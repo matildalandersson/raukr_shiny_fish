@@ -1,0 +1,91 @@
+---
+title: "CPUE and L90 calculations"
+author: "Matilda Andersson"
+date: "2024-06-18"
+output: html_document
+---
+
+load prackages
+```{r}
+library(tidyverse)
+```
+
+load data
+```{r}
+Catch_20232019 <- read_csv("Catch_20232019.csv")
+```
+
+calculate effort (number of nets)
+You could add net depth if you want to be able to look at CPUE at diff depths or remove one depth from the analysis
+```{r}
+Effort_Nnets <- Catch_20232019 %>%
+  group_by(Year, Location) %>%
+  summarise(Effort_Nnets = n_distinct(Station), .groups = 'drop')
+```
+
+remove individuals <12 cm -- not caught representativly in the monitoring nets
+```{r}
+Catch_20232019 <- Catch_20232019 %>%
+  filter(Length_cm >= 12)
+```
+
+group-by year:location:species -- count individuals (there is one row per individual)
+```{r}
+Indiv_count <- Catch_20232019 %>%
+  group_by(Year, Location, Species) %>%
+  summarise(count = n(),
+    Latitude = first(Latitude),
+    Longitude = first(Longitude),
+    .groups = 'drop')
+```
+
+calculate CPUE
+```{r}
+#join the count and effort dataframes
+CPUE_data <- Indiv_count %>%
+  left_join(Effort_Nnets, by = c("Year", "Location"))
+
+CPUE_results <- CPUE_data %>%
+  mutate(CPUE = count / Effort_Nnets)
+
+CPUE_results <- CPUE_results %>%
+  filter(!is.na(Species))
+```
+
+calculate L90
+if statements 
+if Abbore -- length >= 15
+if other use the general filter of >= 12
+if # of individuals < 50 do not calculate -- error message -- "Your numbers look a bit fishy -- locations have been removed due to low sample size"
+```{r}
+L90_data <- Catch_20232019 %>%
+  filter(!(Species == "Abborre" & Length_cm < 15)) %>%
+  filter(!(Species != "Abborre" & Length_cm < 12))
+
+L90 <- L90_data %>%   
+  group_by(Year, Location, Species) %>%
+  summarise(L90_cm=quantile(Length_cm, probs=0.9),
+            Ntot=length(Length_cm))
+
+L90 <- L90 %>%
+  filter((Ntot >= 50))
+```
+
+merge results and create .csv
+```{r}
+ Results_20232019<- CPUE_results %>%
+  left_join(L90, by = c("Year", "Location", "Species"))
+
+#create a new column that has all the years with data available for each location and species combination
+Results_20232019_years <- Results_20232019 %>%
+  group_by(Location, Species) %>%
+  reframe(Years = paste(unique(Year), collapse = ", "))
+
+Results_20232019 <- Results_20232019 %>%
+  left_join(Results_20232019_years %>% select(Location, Species, Years), by = c("Location", "Species"))
+
+write.csv(Results_20232019, "Results_20232019.csv", row.names = FALSE)
+```
+
+
+

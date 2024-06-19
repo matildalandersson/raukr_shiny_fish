@@ -1,0 +1,159 @@
+---
+title: "DataCleaning2"
+author: "Matilda Andersson"
+date: "2024-06-15"
+output: html_document
+---
+Code to clean and reorganize the fish data to make it usable in a shiny app
+
+
+load packages
+```{r}
+library(tidyverse)
+```
+
+load data
+```{r}
+Catch_raw_20232019 <- read_csv("data/Detaljuttag_då_längd_inkl_tomfångst.csv", col_types = cols(
+  År1 = col_double(),   # Specify 'species' as character
+  Lokal = col_character(),   # Specify as character
+  Fångstområde = col_character(),
+  Djupstratum1 = col_character(),
+  störning1 = col_character(),
+  Artbestämning1 = col_character(),
+  Längdgrupp = col_double(),
+  Station = col_double(),
+  Antal1 = col_double(),
+  Vikt_uppmätt = col_character(),
+  Lat_grader = col_character(), # Specify as character - then remove comma and convert to number
+  Long_grader = col_character(), # Specify as character - then remove comma and convert to number
+))
+
+EnglishNames <- read_csv("data/FishNamesEnglish.csv")
+
+```
+
+selected required columns and change from , to . as decimal point
+```{r}
+Catch_20232019 <- Catch_raw_20232019 %>% select(År1, Lokal, Fångstområde, Djupstratum1, störning1, Artbestämning1, Längdgrupp, Antal1, Vikt_uppmätt, Lat_grader, Long_grader, Station)
+
+clean_up_commas <- function(x) {
+  x <- gsub(",", ".", x)  # Replace commas with periods
+}
+
+Catch_20232019 <- Catch_20232019 %>% 
+  mutate(
+    Vikt_uppmätt = clean_up_commas(Vikt_uppmätt),
+    Djupstratum1 = clean_up_commas(Djupstratum1),
+    Lat_grader = clean_up_commas(Lat_grader),
+    Long_grader = clean_up_commas(Long_grader))
+
+Catch_20232019 <- Catch_20232019 %>%
+  mutate(
+    Lat_grader = as.numeric(Lat_grader),
+    Long_grader = as.numeric(Long_grader))
+```
+
+
+År1 - Fishing year
+Lokal - Region (More general location)
+Fångstområde - Location (More specific location)
+Djupstratum1 - Net depth
+störning1 - Was the net disturbed (only want no)
+Artbestämning1 - Species
+Längdgrupp - Length (cm)
+Antal1 - Number of fish
+Vikt_uppmätt - Weight (kg)
+Lat_grader - Lat
+Long_grader - Long
+
+
+re-name things 
+```{r}
+#rename columns
+Catch_20232019 <- Catch_20232019 %>% 
+  rename(Year = År1,
+         Region = Lokal,
+         Location = Fångstområde,
+         Net_depth = Djupstratum1,
+         Disturbance = störning1,
+         Species = Artbestämning1,
+         Length_cm = Längdgrupp,
+         Number = Antal1,
+         Weight_kg =  Vikt_uppmätt,
+         Latitude = Lat_grader,
+         Longitude = Long_grader)
+
+#rename species to english names
+Catch_20232019 <- Catch_20232019 %>%
+  left_join(EnglishNames, by = "Species") %>%
+  mutate(Species = Species_Eng) %>%
+  select(-Species_Eng)
+```
+
+group by location -- calculate mean lat and lon by location --> new df
+replace existing lat and lon with newly calculated
+```{r}
+mean_coords <- Catch_20232019 %>%
+  group_by(Location) %>%
+  summarise(
+    avg_lat = mean(Latitude),
+    avg_long = mean(Longitude))
+
+Catch_20232019 <- Catch_20232019 %>%
+  left_join(mean_coords, by = "Location") %>%
+  select(-Latitude, -Longitude) %>%
+  rename(Latitude = avg_lat, Longitude = avg_long)
+
+rm(mean_coords)
+```
+
+How many species are there - how abundant - decide what to remove
+```{r}
+Catch_count <- Catch_20232019 %>% 
+  count(Species)
+write_csv(Catch_count, "Catch_count.csv")
+```
+
+Remove the species that are likely a mistake or were caught fewer than 10 times in the past 5 years
+```{r}
+Catch_20232019 <- Catch_20232019 %>%
+  filter(!Species %in% c("Ullhandskrabba", "Staksill", "Lax/öring obestämd", "Ejder", "Ål", "Tunga", "Småspigg", "Tångräka obestämd"))
+```
+
+re-name species -- maybe -- but we can come back to this
+```{r}
+
+```
+
+Remove any nets that were disturbed -- data is not reliable 
+```{r}
+Catch_20232019 <- Catch_20232019 %>% 
+  filter(Disturbance != 'JA')
+
+#drop the column "disturbance" -- no longer needed
+Catch_20232019 <- Catch_20232019 %>% select(!Disturbance)
+```
+
+Remove missing data
+```{r}
+#where length or weight wasn't recorded
+Catch_20232019 <- Catch_20232019 %>%
+  filter(!is.na(Length_cm) & !is.na(Weight_kg))
+
+# where net wasn't recorded
+Catch_20232019 <- Catch_20232019 %>% 
+  filter(Net_depth != '-')
+```
+
+create one row per individual -- required for the calculations
+```{r}
+Catch_20232019 <- Catch_20232019 %>%
+  uncount(Number)
+```
+
+write to .csv for further analysis
+```{r}
+write.csv(Catch_20232019, "Catch_20232019.csv", row.names = FALSE)
+```
+
