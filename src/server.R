@@ -83,6 +83,10 @@ server <- function(input, output, session) {
     # Ensure reactive_data() is called only once and stored in a variable
     df <- reactive_data()
     
+    if (is.null(df) || nrow(df) == 0) {
+      return(NULL)
+    }
+    
     # Handle different indicators to create display data for markers
     if (input$indicator == "Abundance [CPUE]"){
       max_CPUE <- max(df$CPUE)
@@ -134,7 +138,6 @@ server <- function(input, output, session) {
     # Return the display dataframe with size categories
     return(display_df_sizes)
   })
-  
   
   plot_data <- reactive({
     info <- input$swedenMap_marker_click
