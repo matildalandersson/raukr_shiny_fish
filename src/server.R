@@ -105,6 +105,7 @@ server <- function(input, output, session) {
         ))
     } else if (indicator == "Size [L90]"){
       # Display alert if switching from CPUE to L90
+
       if (previous_indicator() == "Abundance [CPUE]") {
         shinyalert(
           title = "Removing Data Points",
@@ -144,6 +145,9 @@ server <- function(input, output, session) {
           TRUE ~ 5
         ))
     }
+    
+    # Update previous_indicator with the current indicator
+    previous_indicator(input$indicator)
     
     # Return the display dataframe with size categories
     return(display_df_sizes)
