@@ -86,7 +86,7 @@ Results_20232002_years <- Results_20232002 %>%
 Results_20232002 <- Results_20232002 %>%
   left_join(Results_20232002_years %>% select(Location, Species, nYears, Years), by = c("Location", "Species"))
 
-#write.csv(Results_20232002, "Results_20232002.csv", row.names = FALSE)
+write.csv(Results_20232002, "Results_20232002.csv", row.names = FALSE)
 ```
 
 
