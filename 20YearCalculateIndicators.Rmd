@@ -4,7 +4,6 @@ author: "Matilda Andersson"
 date: "2024-06-19"
 output: html_document
 ---
-Catch_20232002.csv
 
 load packages
 ```{r}
