@@ -349,9 +349,10 @@ server <- function(input, output, session) {
   table_data <- data %>%
     select(-Ntot) %>%
     mutate(across(c(Longitude, Latitude, CPUE), \(x) round(x, 2))) %>%
-    rename(Count = count, 'Number of Nets' = Effort_Nnets, 
-           L90 = L90_cm, 'Years of available data' = Years) %>%
-    mutate('Years of available data' = map_chr(`Years of available data`, truncate_years))
+    rename(Count = count, 'Nets' = Effort_Nnets, 
+           L90 = L90_cm, 'Years with data' = Years,
+           'Years of data' = nYears) %>%
+    mutate('Years with data' = map_chr(`Years with data`, truncate_years))
   
   # Render table in tab
   output$data_table <- renderDT({
@@ -359,10 +360,10 @@ server <- function(input, output, session) {
       table_data,
       filter="top",
       options = list(
-        scrollY = "460px",
+        scrollY = "400px",
         scrollCollapse = TRUE,
         paging = TRUE,
-        searching = FALSE
+        searching = TRUE
       )
     )
   })
