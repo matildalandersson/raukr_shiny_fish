@@ -356,10 +356,12 @@ server <- function(input, output, session) {
   output$data_table <- renderDT({
     datatable(
       table_data,
+      filter="top",
       options = list(
         scrollY = "460px",
         scrollCollapse = TRUE,
-        paging = TRUE
+        paging = TRUE,
+        searching = FALSE
       )
     )
   })
