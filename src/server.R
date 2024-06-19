@@ -223,11 +223,12 @@ server <- function(input, output, session) {
         addMarkers(
           lng = ~Longitude, lat = ~Latitude,     # Set longitude and latitude
           icon = ~icons(
-            iconUrl = "https://as1.ftcdn.net/v2/jpg/06/70/58/68/1000_F_670586814_zPsLZ38T5wtVC4vDKIGNHCN8aYXPSqo1.webp",
-            iconWidth = ~size_category * fish_multiplier,      # Scale icon width
-            iconHeight = ~size_category * fish_multiplier,     # Scale icon height
-            iconAnchorX = ~size_category * fish_multiplier,
-            iconAnchorY = ~size_category * fish_multiplier,
+            #iconUrl = "https://as1.ftcdn.net/v2/jpg/06/70/58/68/1000_F_670586814_zPsLZ38T5wtVC4vDKIGNHCN8aYXPSqo1.webp",
+            iconUrl = "../ai-generated-red-snapper-fish-portrait-isolated-on-transparent-background-generative-ai-free-png.png",
+            iconWidth = ~size_category * (fish_multiplier + 1),      # Scale icon width
+            iconHeight = ~size_category * (fish_multiplier - 1),     # Scale icon height
+            iconAnchorX = ~0.5 * size_category * fish_multiplier,
+            iconAnchorY = ~0.5 * size_category * fish_multiplier,
             popupAnchorX = 0,
             popupAnchorY = 0
           ),
