@@ -139,22 +139,6 @@ input:checked + .slider:before {
     position: relative; /* Ensure tooltip positioning */
 }
 
-.help::after {
-    content: attr(title); /* Tooltip content */
-    display: none; /* Initially hidden */
-    position: absolute; /* Positioning relative to .help */
-    background-color: rgba(0, 0, 0, 0.8); /* Tooltip background color */
-    color: white; /* Tooltip text color */
-    padding: 5px; /* Padding around tooltip text */
-    border-radius: 5px; /* Rounded corners */
-    white-space: nowrap; /* Prevent line breaks */
-    z-index: 1000; /* Ensure it's above other content */
-    font-size: 12px; /* Tooltip text font size */
-    top: calc(100% + 5px); /* Position below .help */
-    left: 50%; /* Center horizontally */
-    transform: translateX(-50%); /* Adjust for centering */
-}
-
 .help:hover::after {
     display: block; /* Show tooltip on hover */
 }
