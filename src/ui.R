@@ -13,7 +13,9 @@ effort, such as per net.
 \n
 Size is L90, a metric used to describe the size distribution 
 of fish populations. It refers to the length at which 90% of 
-the fish in a population are equal to or smaller than that size."
+the fish in a population are equal to or smaller than that size.
+When using size indicator, every location with less than 50
+individuals caught will be removed."
 
 # Define UI for application
 ui <- fluidPage(

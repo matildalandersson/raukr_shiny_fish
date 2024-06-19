@@ -17,9 +17,6 @@ server <- function(input, output, session) {
                     max = max(data$Year),
                     value = round((max(data$Year) + min(data$Year)) / 2, 0))
   
-  # Reactive value to store the previous indicator
-  previous_indicator <- reactiveVal(NULL)
-  
   # Update dataframe based on choice of species and year
   reactive_data <- reactive({
     req(input$species, input$year)
@@ -81,16 +78,13 @@ server <- function(input, output, session) {
   
   # Data for creating markers on the map
   reactive_marker_data <- reactive({
-    df <- reactive_data()
-    indicator <- input$indicator
+    req(input$indicator, reactive_data())
     
-    # If no data remains after filtering, return NULL
-    if (is.null(df) || nrow(df) == 0) {
-      return(NULL)
-    }
+    # Ensure reactive_data() is called only once and stored in a variable
+    df <- reactive_data()
     
     # Handle different indicators to create display data for markers
-    if (indicator == "Abundance [CPUE]"){
+    if (input$indicator == "Abundance [CPUE]"){
       max_CPUE <- max(df$CPUE)
       min_CPUE <- min(df$CPUE)
       range_CPUE <- max_CPUE - min_CPUE
@@ -103,31 +97,22 @@ server <- function(input, output, session) {
           CPUE > (0.25 * range_CPUE + min_CPUE) ~ 10,
           TRUE ~ 5
         ))
-    } else if (indicator == "Size [L90]"){
-      # Display alert if switching from CPUE to L90
-
-      if (previous_indicator() == "Abundance [CPUE]") {
-        shinyalert(
-          title = "Removing Data Points",
-          text = paste("Your data is fishy! To use the size indicator, every location with less than 50", input$species, "caught have been removed"),
-          type = "warning"
-        )
-      }
-      
-      # Update previous_indicator with the current indicator
-      previous_indicator(input$indicator)
+    } else if (input$indicator == "Size [L90]"){
+      # Handle L90 indicator
+      # Check for previous indicator change
       
       # Filter data for L90 column and handle missing data
       display_df <- df %>%
         subset(!is.na(L90_cm))
       
-      # If no valid data remains, show error alert and return NULL
+      # Handle missing data condition
       if (is.null(display_df) || nrow(display_df) == 0) {
         shinyalert(
           title = "No Data",
           text = paste0("Someone stole all of your fish! Every location has caught less than 50 ", input$species, ", so everything has been removed"),
           type = "error"
         )
+        
         return(NULL)
       }
       
@@ -146,12 +131,10 @@ server <- function(input, output, session) {
         ))
     }
     
-    # Update previous_indicator with the current indicator
-    previous_indicator(input$indicator)
-    
     # Return the display dataframe with size categories
     return(display_df_sizes)
   })
+  
   
   plot_data <- reactive({
     info <- input$swedenMap_marker_click
@@ -352,7 +335,7 @@ server <- function(input, output, session) {
   # Process the data with the pipe
   table_data <- data %>%
     select(-Ntot) %>%
-    mutate(across(c(Longitude, Latitude, CPUE), \(x) round(x, 2))) %>%
+    mutate(across(c(Longitude, Latitude, CPUE, L90_cm), \(x) round(x, 2))) %>%
     rename(Count = count, 'Nets' = Effort_Nnets, 
            L90 = L90_cm, 'Years with data' = Years,
            'Years of data' = nYears) %>%
