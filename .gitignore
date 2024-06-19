@@ -3,10 +3,11 @@
 .RData
 .Ruserdata
 
-Catch_20232019.csv
-Catch_20232002.csv
-Catch_count_20232020.csv
-
-#raw data - not currently in the folder to avoid crashing things
+#Ignore the raw data -- too big for github
 Detaljuttag_då_längd_inkl_tomfångst.csv
 Detaljuttag_då_längd_inkl_tomfångst_20year.csv
+
+#Ignore the first level cleaned data -- too big for github
+Catch_20232019.csv
+Catch_20232002.csv
+Catch_count_20232002.csv
