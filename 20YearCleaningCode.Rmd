@@ -7,9 +7,6 @@ output: html_document
 
 Code to clean and reorganize the fish data to make it usable in a shiny app
 
-orig: Catch_raw_20232019 new: Catch_raw_20232002
-orig: Catch_20232002 new: Catch_20232002
-
 load packages
 ```{r}
 library(tidyverse)
@@ -141,9 +138,9 @@ Catch_20232002 <- Catch_20232002 %>% select(!Disturbance)
 
 Remove missing data
 ```{r}
-#where length or weight wasn't recorded
+#where length wasn't recorded
 Catch_20232002 <- Catch_20232002 %>%
-  filter(!is.na(Length_cm) & !is.na(Weight_kg))
+  filter(!is.na(Length_cm))
 
 # where net wasn't recorded
 Catch_20232002 <- Catch_20232002 %>% 
