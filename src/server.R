@@ -31,6 +31,8 @@ server <- function(input, output, session) {
         text = paste("Something is fishy here. No data for", input$species, "in", input$year),
         type = "error"
       )
+      
+      leafletProxy("swedenMap", data = df) %>% clearMarkers()
       return(NULL)
     }
     
