@@ -160,8 +160,6 @@ server <- function(input, output, session) {
     location <- marker_data$Location
     species <- marker_data$Species
     
-    test_data <<- data
-    
     df <- data %>% complete(Species, Year, Location)
     df <- df[which(df$Location == location & df$Species == species), ]
     
