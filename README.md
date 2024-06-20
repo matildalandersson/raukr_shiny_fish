@@ -6,6 +6,6 @@ Developed for the RaukR 2024 course.
 
 Developed by:
 
-Matilda Anderson
+Matilda Andersson
 
 Emma Rørbeck
