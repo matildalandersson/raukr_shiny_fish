@@ -335,8 +335,6 @@ server <- function(input, output, session) {
   
   ## Data Explorer Tab ##
   # Cleaning up data
-  data_test <<- data
-  
   # Process the data with the pipe
   table_data <- data %>%
     select(-Ntot) %>%
