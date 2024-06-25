@@ -23,7 +23,7 @@ Effort_Nnets <- Catch_20232019 %>%
   summarise(Effort_Nnets = n_distinct(Station), .groups = 'drop')
 ```
 
-remove individuals <12 cm -- not caught representativly in the monitoring nets (species across the board according to EB)
+remove individuals <12 cm -- not caught representativly in the monitoring nets (true for species across the board according to EB)
 ```{r}
 Catch_20232019 <- Catch_20232019 %>%
   filter(Length_cm >= 12)
@@ -52,15 +52,23 @@ CPUE_results <- CPUE_results %>%
   filter(!is.na(Species))
 ```
 
-calculate L90
+calculate L90 - https://pub.epsilon.slu.se/32950/1/ostman-o-et-al-20240215.pdf
 if statements 
-if Abbore -- length >= 15
+if Perch -- length >= 15
+if European flounder (P. flesus) and Baltic flounder (P. solemdali)  >= 15
+if large predatory fish (pikeperch/zander, pike, whitefish) >= 25
+cypridids >=12 (but this is the general filter so it doesn't need to be applied again)
 if other use the general filter of >= 12
-if # of individuals < 50 do not calculate -- error message -- "Your numbers look a bit fishy -- locations have been removed due to low sample size"
+if # of individuals < 50 do not calculate -- error message -- "Your numbers look a bit fishy -- locations have been removed due to low sample size" -- Örjans paper actually suggests 300 FYI. 
 ```{r}
 L90_data <- Catch_20232019 %>%
-  filter(!(Species == "Abborre" & Length_cm < 15)) %>%
-  filter(!(Species != "Abborre" & Length_cm < 12))
+  filter(
+    (Species == "Perch" & Length_cm >= 15) |
+    (Species == "European flounder" & Length_cm >= 15) |
+    (Species == "Whitefish" & Length_cm >= 25) |
+    (Species == "Zander" & Length_cm >= 25) |
+    (Species == "Pike" & Length_cm >= 25) |
+    (!Species %in% c("Perch", "European flounder", "Whitefish", "Zander", "Pike") & Length_cm >= 12))
 
 L90 <- L90_data %>%   
   group_by(Year, Location, Species) %>%
