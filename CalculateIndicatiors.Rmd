@@ -23,7 +23,7 @@ Effort_Nnets <- Catch_20232019 %>%
   summarise(Effort_Nnets = n_distinct(Station), .groups = 'drop')
 ```
 
-remove individuals <12 cm -- not caught representativly in the monitoring nets
+remove individuals <12 cm -- not caught representativly in the monitoring nets (species across the board according to EB)
 ```{r}
 Catch_20232019 <- Catch_20232019 %>%
   filter(Length_cm >= 12)
