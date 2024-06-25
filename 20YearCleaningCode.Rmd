@@ -118,7 +118,7 @@ Catch_20232002 <- Catch_20232002 %>%
   filter(!Species %in% c(RemoveSpecies))
 ```
 
-re-name species -- maybe -- but we can come back to this
+re-name species
 ```{r}
 #rename species to english names
 Catch_20232002 <- Catch_20232002 %>%
